@@ -37,7 +37,7 @@ class Application(object):
             page_title="Mutant Hound Inscription Background Generator", page_icon=":bar_chart:", layout="wide"
         )
         # Set search bar
-        self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70300943')
+        self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70304776')
         clr = st.color_picker('Select a background color that you would like to add', '#000')
 
         sac.divider(label='', align='center', key="divider-1")
@@ -52,8 +52,8 @@ class Application(object):
             with c2:
                 c2.markdown("##")
                 submitted = st.form_submit_button(label)
-            st.write("Inscription number can be extracted from ord.io (for instance, see https://www.ord.io/70300943)")
-            st.write("Make sure to enter the number of the inscription WITHOUT commas or #. Like: 70300943")
+            st.write("Inscription number can be extracted from ord.io (for instance, see https://www.ord.io/70304776)")
+            st.write("Make sure to enter the number of the inscription WITHOUT commas or #. Like: 70304776")
             
             # Forward text input parameters
             st.session_state.inscription = c0.text_input("", **input_params)
