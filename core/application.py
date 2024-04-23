@@ -33,7 +33,6 @@ class Application(object):
 
         # Set page header
         icon = Image.open('core/images/logo.png')
-        
         st.set_page_config(
             page_title="Mutant Hound Inscription Background Generator", layout="wide", page_icon=icon
         )
@@ -56,6 +55,10 @@ class Application(object):
         """
         # Display the custom HTML
         st.components.v1.html(custom_html, height = 100)
+
+        # Set copyright
+        st.write("Created by @_demonolith. Feel free to reach out via MH Discord if you have any suggestions to improve this app.")
+        st.write("Note that this app will be available up until the moment the official MH tooling is rolled out.")
 
         # Set search bar
         self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70300943)')
@@ -133,7 +136,6 @@ class Application(object):
             rescaled_image = image_to_rescale.resize((500, 500), resample=Image.NEAREST)
             self.fix_image(rescaled_image)
 
-                    
 
             
 
