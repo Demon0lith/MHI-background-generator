@@ -4,6 +4,7 @@ from core.core import ApplicationCore
 
 import streamlit as st
 import streamlit_antd_components as sac
+from streamlit_extras.app_logo import add_logo
 import logging
 
 from io import BytesIO
@@ -13,13 +14,11 @@ import urllib.request
 import requests
 from bs4 import BeautifulSoup
 
-
 logger = logging.getLogger("logger")
 
 class Application(object):
     def __init__(self, core: ApplicationCore):
         super(Application, self).__init__()
-        st.session_state.pictures={}
         self.core = core
         st.session_state.color = "#000"
 
@@ -31,16 +30,38 @@ class Application(object):
 
     def setup(self):
         """ Method responsible for generating the general application setup """
-        
-        # Set page header
-        st.set_page_config(
-            page_title="Mutant Hound Inscription Background Generator", page_icon=":bar_chart:", layout="wide"
-        )
-        # Set search bar
-        self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70304776')
-        clr = st.color_picker('Select a background color that you would like to add', '#000')
 
+        # Set page header
+        icon = Image.open('core/images/logo.png')
+        
+        st.set_page_config(
+            page_title="Mutant Hound Inscription Background Generator", layout="wide", page_icon=icon
+        )
+
+        # Custom HTML/CSS for the banner
+        custom_html = """
+        <div class="banner">
+            <img src="https://inscriptions.novellabs.xyz/static/media/Logo.23ccec6e35785ba076fa.png" alt="Banner Image">
+        </div>
+        <style>
+            .banner {
+                width: 100%;
+                overflow: hidden;
+            }
+            .banner img {
+                width: 30%;
+                object-fit: cover;
+            }
+        </style>
+        """
+        # Display the custom HTML
+        st.components.v1.html(custom_html, height = 100)
+
+        # Set search bar
+        self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70300943)')
+        clr = st.color_picker('Select a background color that you would like to add', '#000')
         sac.divider(label='', align='center', key="divider-1")
+        
         st.session_state.color = self.hex_to_rgb(clr)
 
     def text_field(self, label, columns=None, **input_params):
@@ -52,11 +73,11 @@ class Application(object):
             with c2:
                 c2.markdown("##")
                 submitted = st.form_submit_button(label)
-            st.write("Inscription number can be extracted from ord.io (for instance, see https://www.ord.io/70304776)")
-            st.write("Make sure to enter the number of the inscription WITHOUT commas or #. Like: 70304776")
-            
+            st.write("Inscription number can be extracted from ord.io (for instance, see https://www.ord.io/70300943)")
+
             # Forward text input parameters
-            st.session_state.inscription = c0.text_input("", **input_params)
+            input = c0.text_input("", **input_params)
+            st.session_state.inscription = input.replace(",", "")
             if len(st.session_state.inscription)>0:
                 st.write(f"Inscription # {st.session_state.inscription}")
 
@@ -68,14 +89,11 @@ class Application(object):
 
     def fix_image(self, image):
         # image = Image.open(upload)
-        self.col1.write("Original Image :camera:")
         self.col1.image(image)
 
         fixed = image.convert("RGBA")
         new_image = Image.new("RGBA", fixed.size, st.session_state.color)
         new_image.paste(fixed, mask=fixed)
-        # fixed = remove(image, bgcolor=[0, 249, 2, 0])#)st.session_state.color)
-        self.col2.write("Fixed Image :wrench:")
         self.col2.image(new_image)
 
     def parse_and_extract(self, r):
