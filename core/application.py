@@ -37,7 +37,7 @@ class Application(object):
             page_title="Mutant Hound Inscription Background Generator", page_icon=":bar_chart:", layout="wide"
         )
         # Set search bar
-        self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70300943)')
+        self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70300943; as extracted from ord.io (https://www.ord.io/70300943))')
         clr = st.color_picker('Select a background color that you would like to add', '#000')
 
         sac.divider(label='', align='center', key="divider-1")
