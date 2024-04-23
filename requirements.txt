@@ -4,3 +4,4 @@ requests==2.28.2
 pillow
 beautifulsoup4
 streamlit-extras
+streamlit_image_select
