@@ -98,6 +98,10 @@ class Application(object):
         new_image = Image.new("RGBA", fixed.size, st.session_state.color)
         new_image.paste(fixed, mask=fixed)
         self.col2.image(new_image)
+        
+        new_image.save("processed.png")
+        with self.col2:
+            st.download_button(label="Download image", data=open('processed.png', 'rb').read(), file_name=f"MHI-inscription-{st.session_state.inscription}.png", mime="image/jpeg")
 
     def parse_and_extract(self, r):
         """ Method responsible for parsing the extracted data """
@@ -135,7 +139,3 @@ class Application(object):
             
             rescaled_image = image_to_rescale.resize((500, 500), resample=Image.NEAREST)
             self.fix_image(rescaled_image)
-
-
-            
-
