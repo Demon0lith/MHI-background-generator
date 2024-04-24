@@ -20,7 +20,6 @@ class Application(object):
     def __init__(self, core: ApplicationCore):
         super(Application, self).__init__()
         self.core = core
-        st.session_state.color = "#000"
         st.session_state.selected = ""
 
         st.session_state.inscription = ""
@@ -67,32 +66,43 @@ class Application(object):
         col1, col2 = st.columns([5, 15])
         with col1:
             st.session_state.selected = st.radio(
-                "**Do you want to pick a background color using the color wheel, or use one of the available templates?**",
+                "Use the color wheel, or a template?",
                 key="option 1",
                 options=["Color wheel", "Available templates"],
                 index=0,
             )
         with col2:
             if st.session_state.selected == "Color wheel":
-                clr = st.color_picker('Select a background color:', '#000')
-                st.session_state.color = self.hex_to_rgb(clr)
-                st.session_state.colorOptions = st.radio(
-                    "Do you want the background color to be filled uniformly, or as a colored grid displaying a color palette?",
-                    key="option 2",
-                    options=["Uniform", "Grid"],
-                    index=0
-                )
+                col3, col4 = st.columns([10, 5])
+                with col3:
+                    options = ["Uniform", "Grid"]
+                    st.session_state.color = self.hex_to_rgb(st.session_state.clr)
+                    st.session_state.colorOptions = st.radio(
+                        "Do you want the background color to be filled uniformly, or as a colored grid?",
+                        key="option 2",
+                        options=options,
+                        index=st.session_state.colorOptionsIndex
+                    )
+                    st.session_state.clr = st.color_picker('Select (main) background color:', st.session_state.clr)
+                    # st.session_state.lastFiveColors.append(st.session_state.color)
+                    st.session_state.colorOptionsIndex = options.index(st.session_state.colorOptions)
+                # with col4:
+                #     st.write("The last 5 selected background colors:")
+                #     st.write(st.session_state.lastFiveColors)
+                
             if st.session_state.selected == "Available templates":
-                st.session_state.img = image_select(
-                    label="Select a template (credits go to @HudsonGroupNFT and rubengg.eth):",
-                    images=[
+                templates = [
                         Image.open("core/images/templates/0.jpeg"),
                         Image.open("core/images/templates/1.jpeg"),
                         Image.open("core/images/templates/2.jpeg"),
                         Image.open("core/images/templates/3.jpeg"),
                         Image.open("core/images/templates/4.png"),
-                    ], index=0, use_container_width = False
+                ]
+                st.session_state.img = image_select(
+                    label="Select a template (credits go to @HudsonGroupNFT and rubengg.eth):",
+                    images=templates, use_container_width = False, key = 'option 3', index = 0
                 )
+                st.session_state.templateIndex = templates.index(st.session_state.img)                
         sac.divider(label='', align='center', key="divider-1")
         
     def text_field(self, label, columns=None, **input_params):
