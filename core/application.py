@@ -10,6 +10,7 @@ import logging
 from PIL import Image, ImageDraw
 import urllib.request 
 import random
+import glob
 
 import requests
 from bs4 import BeautifulSoup
@@ -22,6 +23,7 @@ class Application(object):
         self.core = core
 
         st.session_state.inscription = ""
+        st.session_state.gif_rendered = False
         self.session = requests.Session()
         self.session.headers.update(
             {'User-Agent': 'Mozilla/5.0', 'Accept-Encoding': 'gzip, deflate', 'Accept': '*/*', 'Connection': 'close', 'Te': 'trailers'}
@@ -110,10 +112,10 @@ class Application(object):
                         Image.open("core/images/templates/6.png").convert("RGB")
                 ]
                 st.session_state.img = image_select(
-                    label="Select a template (credits go to @HudsonGroupNFT, rubengg.eth, motionetic ):",
+                    label="Select a template (credits go to @HudsonGroupNFT, rubengg.eth, motionetic):",
                     images=templates, use_container_width = False, key = 'option 3', index = 0
                 )
-                st.session_state.templateIndex = templates.index(st.session_state.img)                
+                st.session_state.templateIndex = templates.index(st.session_state.img)      
         sac.divider(label='', align='center', key="divider-1")
 
     def text_field(self, label, columns=None, **input_params):
@@ -125,13 +127,14 @@ class Application(object):
             with c2:
                 c2.markdown("##")
                 submitted = st.form_submit_button(label)
-            st.write("Inscription number can be extracted from ord.io (for instance, see https://www.ord.io/70300943)")
+            st.write("**You can now enter multiple inscription numbers in one go! For example, copy and paste the following numbers in the search bar:**")
+            st.markdown("70300943, 70300944, 70300945, 70300946")
 
             # Forward text input parameters
             input = c0.text_input("", **input_params)
-            st.session_state.inscription = input.replace(",", "")
-            if len(st.session_state.inscription) > 0:
-                st.write(f"**Selected inscription # {st.session_state.inscription}**")
+            st.session_state.inscription = input.replace(" ", "").split(",")
+            if len(st.session_state.inscription[0]) > 0:
+                st.write(f"**Selected inscription(s) # {st.session_state.inscription}**")
             else:
                 st.write("##")
 
@@ -162,7 +165,6 @@ class Application(object):
                     )
                 )
         image.save(f'{idx}.png')
-        #st.image(Image.open(f"{idx}.png"), caption = color)
 
     def color_grid(self):
         image = Image.new('RGB', (500, 500))
@@ -189,28 +191,27 @@ class Application(object):
         image.save(f'grid.png')
         return Image.open("grid.png")
 
-    def fix_image(self, image):
-        with self.col1:
-            fixed = image.convert("RGBA")        
-            if st.session_state.selected == "Color wheel":
-                if st.session_state.colorOptions == "Uniform":
-                    new_image = Image.new("RGBA", fixed.size, st.session_state.color)
-                if st.session_state.colorOptions == "Grid":
-                    new_image = self.color_grid() # Render the color grid
-                new_image.paste(fixed, mask=fixed)
-                st.image(new_image)
-                new_image.save("processed.png")
-            if st.session_state.selected == "Available templates":
-                if st.session_state.img.height > 500:
-                    offset = ((st.session_state.img.width - fixed.width) // 2, ((st.session_state.img.height - fixed.height) // 2)-25)
-                    st.session_state.img.paste(fixed,offset, mask=fixed)
-                else:
-                    st.session_state.img.paste(fixed, mask=fixed)
-                st.image(st.session_state.img)
-                st.session_state.img.save("processed.png")
-            
-            
-            st.download_button(label="Download image", data=open('processed.png', 'rb').read(), file_name=f"MHI-inscription-{st.session_state.inscription}.png", mime="image/jpeg")
+    def fix_image(self, image, inscription):
+        fixed = image.convert("RGBA")
+        if st.session_state.selected == "Color wheel":
+            if st.session_state.colorOptions == "Uniform":
+                new_image = Image.new("RGBA", fixed.size, st.session_state.color)
+            if st.session_state.colorOptions == "Grid":
+                new_image = self.color_grid() # Render the color grid
+            new_image.paste(fixed, mask=fixed)
+            # st.image(new_image)
+            new_image.save(f"core/images/rendered/processed-{inscription}.png")
+            return new_image
+        if st.session_state.selected == "Available templates":
+            background_image = st.session_state.img.copy()
+            if background_image.height > 500:
+                offset = ((background_image.width - fixed.width) // 2, ((background_image.height - fixed.height) // 2)-25)
+                background_image.paste(fixed, offset, mask=fixed)
+            else:
+                background_image.paste(fixed, mask=fixed)
+            background_image.save(f"core/images/rendered/processed-{inscription}.png")
+            return Image.open(f"core/images/rendered/processed-{inscription}.png")
+        
 
     def parse_and_extract(self, r):
         """ Method responsible for parsing the extracted data """
@@ -230,20 +231,45 @@ class Application(object):
     def run(self):
         """ Method responsible for running the application """
         self.setup()
-        self.col1, self.col2 = st.columns(2)
         base_url = 'https://www.ord.io/'
 
         # Scrape the page
-        if len(st.session_state.inscription) > 0:
-            response=self.session.get(f'{base_url}{st.session_state.inscription}', timeout=10)
-            if response.status_code != 200:
-                raise ValueError(f"scrape returned invalid status code {response.status_code}")
-            
-            imageid=self.parse_and_extract(r=response.text)
-            url = f'https://ordin.s3.amazonaws.com/inscriptions/{imageid}'
-            # response=self.session.get(url, timeout=10)
-            urllib.request.urlretrieve(url, "mhi.png") 
-            image_to_rescale = Image.open("mhi.png")
-            
-            rescaled_image = image_to_rescale.resize((500, 500), resample=Image.NEAREST)
-            self.fix_image(rescaled_image)
+        if len(st.session_state.inscription[0]) > 0:
+            toDisplay = []
+            for inscription in st.session_state.inscription:
+                response=self.session.get(f'{base_url}{inscription}', timeout=10)
+                if response.status_code != 200:
+                    raise ValueError(f"scrape returned invalid status code {response.status_code}")
+                
+                imageid=self.parse_and_extract(r=response.text)
+                url = f'https://ordin.s3.amazonaws.com/inscriptions/{imageid}'
+                # response=self.session.get(url, timeout=10)
+                urllib.request.urlretrieve(url, "mhi.png") 
+                image_to_rescale = Image.open("mhi.png")
+                
+                rescaled_image = image_to_rescale.resize((500, 500), resample=Image.NEAREST)
+                toDisplay.append({ 
+                    'mhi' : self.fix_image(rescaled_image, inscription),
+                    '#' : inscription
+                })
+
+            # Display MHIs
+            n_rows = int(1 + (len(toDisplay) // 4 ) )
+            rows = [st.columns(4) for _ in range(n_rows)]
+            cols = [column for row in rows for column in row]
+            for col, nft in zip(cols, toDisplay):
+                col.caption(f'MHI #{nft.get("#")}')
+                col.image(nft.get("mhi"))
+                col.download_button(label="Download image", data=open(f"core/images/rendered/processed-{nft.get('#')}.png", 'rb').read(), file_name=f"MHI-inscription-{nft.get('#')}.png", mime="image/jpeg")
+        # self.make_gif() # 70299006, 70298937, 70298924, 70298664, 70298780, 70298779, 70300359, 70300634, 70300367, 70300213, 70299379, 70299602, 70299595
+
+        
+
+    def make_gif(self):
+        frames = [Image.open(image) for image in glob.glob(f"core/images/rendered/*.png")]
+        frame_one = frames[0]
+        frame_one.save("core/images/rendered/MHI.gif", format="GIF", append_images=frames, save_all=True, duration=200, loop=0)
+        st.gif_rendered=True
+        st.image("core/images/rendered/MHI.gif")
+
+        # st.download_button(label="Create and download GIF", data=, file_name=f"MHI-inscription-{nft.get('#')}.png", mime="image/jpeg", on_click=self.make_gif)          
