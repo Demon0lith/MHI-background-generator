@@ -1,1 +1,3 @@
-- Add background masks
+- Add additional background masks
+- Allow for selecting multiple inscriptions
+- Integrate a multigrid
