@@ -20,7 +20,6 @@ class Application(object):
     def __init__(self, core: ApplicationCore):
         super(Application, self).__init__()
         self.core = core
-        st.session_state.selected = ""
 
         st.session_state.inscription = ""
         self.session = requests.Session()
@@ -73,23 +72,33 @@ class Application(object):
             )
         with col2:
             if st.session_state.selected == "Color wheel":
-                col3, col4 = st.columns([10, 5])
+                
+                col3, col4 = st.columns([8, 10])
                 with col3:
                     options = ["Uniform", "Grid"]
-                    st.session_state.color = self.hex_to_rgb(st.session_state.clr)
                     st.session_state.colorOptions = st.radio(
                         "Do you want the background color to be filled uniformly, or as a colored grid?",
                         key="option 2",
                         options=options,
                         index=st.session_state.colorOptionsIndex
                     )
-                    st.session_state.clr = st.color_picker('Select (main) background color:', st.session_state.clr)
-                    # st.session_state.lastFiveColors.append(st.session_state.color)
+                    st.session_state.clr = st.color_picker('Select (main) background color:', key = "colorpicker")
+                    st.session_state.color = self.hex_to_rgb(st.session_state.clr)
+                    if st.session_state.color not in st.session_state.lastFiveColors:
+                        st.session_state.lastFiveColors.append(st.session_state.color)
+                    if len(st.session_state.lastFiveColors) > 5:
+                        # Remove first element
+                        st.session_state.lastFiveColors.pop(0)
                     st.session_state.colorOptionsIndex = options.index(st.session_state.colorOptions)
-                # with col4:
-                #     st.write("The last 5 selected background colors:")
-                #     st.write(st.session_state.lastFiveColors)
-                
+                with col4:
+                    st.write("The last 5 (unique) colors you selected (most recent first):")
+                    images = []; captions = []
+                    for idx, col in enumerate(st.session_state.lastFiveColors[::-1]):
+                        self.selected_colors(idx, col)
+                        images.append(Image.open(f"{idx}.png"))
+                        captions.append(col)
+                    st.image(images, caption = captions)
+                    
             if st.session_state.selected == "Available templates":
                 templates = [
                         Image.open("core/images/templates/0.jpeg"),
@@ -104,7 +113,7 @@ class Application(object):
                 )
                 st.session_state.templateIndex = templates.index(st.session_state.img)                
         sac.divider(label='', align='center', key="divider-1")
-        
+
     def text_field(self, label, columns=None, **input_params):
         with st.form('chat_input_form', clear_on_submit=True):
             # Sets a default key parameter to avoid duplicate key errors
@@ -129,6 +138,29 @@ class Application(object):
         value = value.lstrip('#')
         lv = len(value)
         return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+
+    def selected_colors(self, idx, color):
+        image = Image.new('RGB', (25, 25))
+        rectangle_width = 50
+        rectangle_height = 50
+        
+        draw_image = ImageDraw.Draw(image)
+        for i in range(int(image.size[0]/rectangle_width)+1):
+            for j in range(int(image.size[1]/rectangle_height)+1):
+                rectangle_x = i*rectangle_width
+                rectangle_y = j*rectangle_height
+            
+                rectangle_shape = [
+                    (rectangle_x, rectangle_y),
+                    (rectangle_x + rectangle_width, rectangle_y + rectangle_height)]
+                draw_image.rectangle(
+                    rectangle_shape,
+                    fill=(
+                        color
+                    )
+                )
+        image.save(f'{idx}.png')
+        #st.image(Image.open(f"{idx}.png"), caption = color)
 
     def color_grid(self):
         image = Image.new('RGB', (500, 500))
@@ -193,7 +225,7 @@ class Application(object):
     def run(self):
         """ Method responsible for running the application """
         self.setup()
-        
+    
         self.col1, self.col2 = st.columns(2)
         base_url = 'https://www.ord.io/'
 
