@@ -97,7 +97,7 @@ class Application(object):
                         self.selected_colors(idx, col)
                         images.append(Image.open(f"{idx}.png"))
                         captions.append(col)
-                    st.image(images, caption = captions)
+                    st.image(images, width=75, caption = captions)
                     
             if st.session_state.selected == "Available templates":
                 templates = [
