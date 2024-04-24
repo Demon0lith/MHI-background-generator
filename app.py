@@ -40,6 +40,8 @@ def main():
         st.session_state['colorOptionsIndex'] = 0
     if "templateIndex" not in st.session_state:
         st.session_state['templateIndex'] = 0
+    if 'clicked' not in st.session_state:
+        st.session_state["clicked"] = False        
     #logger.info("[+] Core initializing")
     appCore = ApplicationCore()
 
