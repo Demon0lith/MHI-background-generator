@@ -7,8 +7,9 @@ import streamlit_antd_components as sac
 from streamlit_image_select import image_select
 import logging
 
-from PIL import Image
+from PIL import Image, ImageDraw
 import urllib.request 
+import random
 
 import requests
 from bs4 import BeautifulSoup
@@ -58,16 +59,16 @@ class Application(object):
 
         # Set copyright
         st.write("Created by @_demonolith. Feel free to reach out via MH Discord if you have any suggestions to improve this app.")
-        st.write("**Note that this app will be available up until the moment the official MH tooling is rolled out.**")
+        st.write("**Note that this app is not an official MH tool.**")
 
         # Set search bar
         self.text_field(label=":mag:", placeholder = 'Enter inscription number (e.g., 70300943)')
         
-        col1, col2 = st.columns([5, 20])
+        col1, col2 = st.columns([5, 15])
         with col1:
             st.session_state.selected = st.radio(
                 "**Do you want to pick a background color using the color wheel, or use one of the available templates?**",
-                key="visibility",
+                key="option 1",
                 options=["Color wheel", "Available templates"],
                 index=0,
             )
@@ -75,6 +76,12 @@ class Application(object):
             if st.session_state.selected == "Color wheel":
                 clr = st.color_picker('Select a background color:', '#000')
                 st.session_state.color = self.hex_to_rgb(clr)
+                st.session_state.colorOptions = st.radio(
+                    "Do you want the background color to be filled uniformly, or as a colored grid displaying a color palette?",
+                    key="option 2",
+                    options=["Uniform", "Grid"],
+                    index=0
+                )
             if st.session_state.selected == "Available templates":
                 st.session_state.img = image_select(
                     label="Select a template (credits go to @HudsonGroupNFT and rubengg.eth):",
@@ -84,11 +91,10 @@ class Application(object):
                         Image.open("core/images/templates/2.jpeg"),
                         Image.open("core/images/templates/3.jpeg"),
                         Image.open("core/images/templates/4.png"),
-                    ], index=0
+                    ], index=0, use_container_width = False
                 )
         sac.divider(label='', align='center', key="divider-1")
         
-
     def text_field(self, label, columns=None, **input_params):
         with st.form('chat_input_form', clear_on_submit=True):
             # Sets a default key parameter to avoid duplicate key errors
@@ -114,12 +120,40 @@ class Application(object):
         lv = len(value)
         return tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
 
+    def color_grid(self):
+        image = Image.new('RGB', (500, 500))
+        rectangle_width = 25
+        rectangle_height = 25
+        
+        draw_image = ImageDraw.Draw(image)
+        for i in range(int(image.size[0]/rectangle_width)+1):
+            for j in range(int(image.size[1]/rectangle_height)+1):
+                rectangle_x = i*rectangle_width
+                rectangle_y = j*rectangle_height
+            
+                rectangle_shape = [
+                    (rectangle_x, rectangle_y),
+                    (rectangle_x + rectangle_width, rectangle_y + rectangle_height)]
+                draw_image.rectangle(
+                    rectangle_shape,
+                    fill=(
+                        random.randint(st.session_state.color[0]-20, st.session_state.color[0]+20),
+                        random.randint(st.session_state.color[1]-20, st.session_state.color[1]+20),
+                        random.randint(st.session_state.color[2]-20, st.session_state.color[2]+20)
+                    )
+                )
+        image.save(f'grid.png')
+        return Image.open("grid.png")
+
     def fix_image(self, image):
         self.col1.image(image)
 
         fixed = image.convert("RGBA")        
         if st.session_state.selected == "Color wheel":
-            new_image = Image.new("RGBA", fixed.size, st.session_state.color)
+            if st.session_state.colorOptions == "Uniform":
+                new_image = Image.new("RGBA", fixed.size, st.session_state.color)
+            if st.session_state.colorOptions == "Grid":
+                new_image = self.color_grid() # Render the color grid
             new_image.paste(fixed, mask=fixed)
             self.col2.image(new_image)
             new_image.save("processed.png")
