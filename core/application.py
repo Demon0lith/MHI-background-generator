@@ -106,9 +106,11 @@ class Application(object):
                         Image.open("core/images/templates/2.jpeg"),
                         Image.open("core/images/templates/3.jpeg"),
                         Image.open("core/images/templates/4.png"),
+                        Image.open("core/images/templates/5.png").convert("RGB"),
+                        Image.open("core/images/templates/6.png").convert("RGB")
                 ]
                 st.session_state.img = image_select(
-                    label="Select a template (credits go to @HudsonGroupNFT and rubengg.eth):",
+                    label="Select a template (credits go to @HudsonGroupNFT, rubengg.eth, motionetic ):",
                     images=templates, use_container_width = False, key = 'option 3', index = 0
                 )
                 st.session_state.templateIndex = templates.index(st.session_state.img)                
@@ -188,23 +190,26 @@ class Application(object):
         return Image.open("grid.png")
 
     def fix_image(self, image):
-        self.col1.image(image)
-
-        fixed = image.convert("RGBA")        
-        if st.session_state.selected == "Color wheel":
-            if st.session_state.colorOptions == "Uniform":
-                new_image = Image.new("RGBA", fixed.size, st.session_state.color)
-            if st.session_state.colorOptions == "Grid":
-                new_image = self.color_grid() # Render the color grid
-            new_image.paste(fixed, mask=fixed)
-            self.col2.image(new_image)
-            new_image.save("processed.png")
-        if st.session_state.selected == "Available templates":
-            st.session_state.img.paste(fixed, mask=fixed)
-            self.col2.image(st.session_state.img)
-            st.session_state.img.save("processed.png")
-        
-        with self.col2:
+        with self.col1:
+            fixed = image.convert("RGBA")        
+            if st.session_state.selected == "Color wheel":
+                if st.session_state.colorOptions == "Uniform":
+                    new_image = Image.new("RGBA", fixed.size, st.session_state.color)
+                if st.session_state.colorOptions == "Grid":
+                    new_image = self.color_grid() # Render the color grid
+                new_image.paste(fixed, mask=fixed)
+                st.image(new_image)
+                new_image.save("processed.png")
+            if st.session_state.selected == "Available templates":
+                if st.session_state.img.height > 500:
+                    offset = ((st.session_state.img.width - fixed.width) // 2, ((st.session_state.img.height - fixed.height) // 2)-25)
+                    st.session_state.img.paste(fixed,offset, mask=fixed)
+                else:
+                    st.session_state.img.paste(fixed, mask=fixed)
+                st.image(st.session_state.img)
+                st.session_state.img.save("processed.png")
+            
+            
             st.download_button(label="Download image", data=open('processed.png', 'rb').read(), file_name=f"MHI-inscription-{st.session_state.inscription}.png", mime="image/jpeg")
 
     def parse_and_extract(self, r):
@@ -225,7 +230,6 @@ class Application(object):
     def run(self):
         """ Method responsible for running the application """
         self.setup()
-    
         self.col1, self.col2 = st.columns(2)
         base_url = 'https://www.ord.io/'
 
