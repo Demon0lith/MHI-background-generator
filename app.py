@@ -4,6 +4,7 @@
 from core import globals
 from core.core import ApplicationCore
 from core.application import Application
+import streamlit as st
 
 import logging
 import argparse
@@ -23,7 +24,6 @@ def main():
         help="Configuration file",
         default="",
     )
-    
     lpArgs = lpParser.parse_args()
     try:
         if len(lpArgs.target_file) == 0:
@@ -32,6 +32,14 @@ def main():
         pass
 
     # Initialize and execute the application
+    if "clr" not in st.session_state:
+        st.session_state['clr'] = "#000"
+    if "lastFiveColors" not in st.session_state:
+        st.session_state['lastFiveColors'] = []
+    if "colorOptionsIndex" not in st.session_state:
+        st.session_state['colorOptionsIndex'] = 0
+    if "templateIndex" not in st.session_state:
+        st.session_state['templateIndex'] = 0
     #logger.info("[+] Core initializing")
     appCore = ApplicationCore()
 
