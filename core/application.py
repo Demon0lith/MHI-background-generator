@@ -132,10 +132,7 @@ class Application(object):
             # Forward text input parameters
             input = c0.text_input("", **input_params)
             st.session_state.inscription = input.replace(" ", "").split(",")
-            if len(st.session_state.inscription[0]) > 0:
-                st.write(f"**Selected inscription(s) # {st.session_state.inscription}**")
-            else:
-                st.write("##")
+            st.write("##")
 
     def hex_to_rgb(self, value):
         """Return (red, green, blue) for the color given as #rrggbb."""
