@@ -199,7 +199,7 @@ class Application(object):
                 new_image = self.color_grid() # Render the color grid
             new_image.paste(fixed, mask=fixed)
             # st.image(new_image)
-            new_image.save(f"core/images/rendered/processed-{inscription}.png")
+            new_image.save(f"core/images/rendered/{inscription}.png")
             return new_image
         if st.session_state.selected == "Available templates":
             background_image = st.session_state.img.copy()
@@ -208,8 +208,8 @@ class Application(object):
                 background_image.paste(fixed, offset, mask=fixed)
             else:
                 background_image.paste(fixed, mask=fixed)
-            background_image.save(f"core/images/rendered/processed-{inscription}.png")
-            return Image.open(f"core/images/rendered/processed-{inscription}.png")
+            background_image.save(f"core/images/rendered/{inscription}.png")
+            return Image.open(f"core/images/rendered/{inscription}.png")
         
     def parse_and_extract(self, r):
         """ Method responsible for parsing the extracted data """
@@ -254,13 +254,14 @@ class Application(object):
         for col, nft in zip(cols, toDisplay):
             col.caption(f'MHI #{nft.get("#")}')
             col.image(nft.get("mhi"))
-            col.download_button(label="Download image", data=open(f"core/images/rendered/processed-{nft.get('#')}.png", 'rb').read(), file_name=f"MHI-inscription-{nft.get('#')}.png", mime="image/jpeg")
+            col.download_button(label="Download image", data=open(f"core/images/rendered/{nft.get('#')}.png", 'rb').read(), file_name=f"MHI-inscription-{nft.get('#')}.png", mime="image/jpeg")
         # self.make_gif() # 70299006, 70298937, 70298924, 70298664, 70298780, 70298779, 70300359, 70300634, 70300367, 70300213, 70299379, 70299602, 70299595
         self.make_gif()
         st.download_button(label="Download GIF", data=open('core/images/rendered/MHI.gif', 'rb').read(), file_name="MHI-inscription.gif")
 
     def make_gif(self):
-        frames = [Image.open(image) for image in glob.glob(f"core/images/rendered/*.png")]
+        images_to_use = [f"core/images/rendered/{image}.png" for image in st.session_state.inscription]
+        frames = [Image.open(image) for image in images_to_use]
         frame_one = frames[0]
         frame_one.save("core/images/rendered/MHI.gif", format="GIF", append_images=frames, save_all=True, duration=200, loop=0)
 
