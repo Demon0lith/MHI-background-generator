@@ -116,7 +116,6 @@ class Application(object):
                     images=templates, use_container_width = False, key = 'option 3', index = 0
                 )
                 st.session_state.templateIndex = templates.index(st.session_state.img)      
-        sac.divider(label='', align='center', key="divider-1")
 
     def text_field(self, label, columns=None, **input_params):
         with st.form('chat_input_form', clear_on_submit=True):
@@ -212,7 +211,6 @@ class Application(object):
             background_image.save(f"core/images/rendered/processed-{inscription}.png")
             return Image.open(f"core/images/rendered/processed-{inscription}.png")
         
-
     def parse_and_extract(self, r):
         """ Method responsible for parsing the extracted data """
         
@@ -228,48 +226,57 @@ class Application(object):
             print("No meta tag found with property='og:image'")
             return None
 
-    def run(self):
-        """ Method responsible for running the application """
-        self.setup()
+    def render_images(self): 
         base_url = 'https://www.ord.io/'
 
-        # Scrape the page
-        if len(st.session_state.inscription[0]) > 0:
-            toDisplay = []
-            for inscription in st.session_state.inscription:
-                response=self.session.get(f'{base_url}{inscription}', timeout=10)
-                if response.status_code != 200:
-                    raise ValueError(f"scrape returned invalid status code {response.status_code}")
-                
-                imageid=self.parse_and_extract(r=response.text)
-                url = f'https://ordin.s3.amazonaws.com/inscriptions/{imageid}'
-                # response=self.session.get(url, timeout=10)
-                urllib.request.urlretrieve(url, "mhi.png") 
-                image_to_rescale = Image.open("mhi.png")
-                
-                rescaled_image = image_to_rescale.resize((500, 500), resample=Image.NEAREST)
-                toDisplay.append({ 
-                    'mhi' : self.fix_image(rescaled_image, inscription),
-                    '#' : inscription
-                })
+        toDisplay = []
+        for inscription in st.session_state.inscription:
+            response=self.session.get(f'{base_url}{inscription}', timeout=10)
+            if response.status_code != 200:
+                raise ValueError(f"scrape returned invalid status code {response.status_code}")
+            
+            imageid=self.parse_and_extract(r=response.text)
+            url = f'https://ordin.s3.amazonaws.com/inscriptions/{imageid}'
+            # response=self.session.get(url, timeout=10)
+            urllib.request.urlretrieve(url, "mhi.png") 
+            image_to_rescale = Image.open("mhi.png")
+            
+            rescaled_image = image_to_rescale.resize((500, 500), resample=Image.NEAREST)
+            toDisplay.append({ 
+                'mhi' : self.fix_image(rescaled_image, inscription),
+                '#' : inscription
+            })
 
-            # Display MHIs
-            n_rows = int(1 + (len(toDisplay) // 4 ) )
-            rows = [st.columns(4) for _ in range(n_rows)]
-            cols = [column for row in rows for column in row]
-            for col, nft in zip(cols, toDisplay):
-                col.caption(f'MHI #{nft.get("#")}')
-                col.image(nft.get("mhi"))
-                col.download_button(label="Download image", data=open(f"core/images/rendered/processed-{nft.get('#')}.png", 'rb').read(), file_name=f"MHI-inscription-{nft.get('#')}.png", mime="image/jpeg")
+        # Display MHIs
+        n_rows = int(1 + (len(toDisplay) // 4 ) )
+        rows = [st.columns(4) for _ in range(n_rows)]
+        cols = [column for row in rows for column in row]
+        for col, nft in zip(cols, toDisplay):
+            col.caption(f'MHI #{nft.get("#")}')
+            col.image(nft.get("mhi"))
+            col.download_button(label="Download image", data=open(f"core/images/rendered/processed-{nft.get('#')}.png", 'rb').read(), file_name=f"MHI-inscription-{nft.get('#')}.png", mime="image/jpeg")
         # self.make_gif() # 70299006, 70298937, 70298924, 70298664, 70298780, 70298779, 70300359, 70300634, 70300367, 70300213, 70299379, 70299602, 70299595
-
-        
+        self.make_gif()
+        st.download_button(label="Download GIF", data=open('core/images/rendered/MHI.gif', 'rb').read(), file_name="MHI-inscription.gif")
 
     def make_gif(self):
         frames = [Image.open(image) for image in glob.glob(f"core/images/rendered/*.png")]
         frame_one = frames[0]
         frame_one.save("core/images/rendered/MHI.gif", format="GIF", append_images=frames, save_all=True, duration=200, loop=0)
-        st.gif_rendered=True
-        st.image("core/images/rendered/MHI.gif")
 
-        # st.download_button(label="Create and download GIF", data=, file_name=f"MHI-inscription-{nft.get('#')}.png", mime="image/jpeg", on_click=self.make_gif)          
+    def click_button(self):
+        st.session_state.clicked = True
+
+    def run(self):
+        """ Method responsible for running the application """
+        self.setup()
+
+        # Render the images
+        sac.divider(label='', align='center', key="divider-1")
+        if len(st.session_state.inscription[0]) > 0:
+            # st.button(label="Render image(s)", key = "render", on_click=self.click_button)
+            
+            # if st.session_state.clicked:
+            self.render_images()
+            # st.session_state.clicked = False
+            
